@@ -1,0 +1,16 @@
+version: '3'
+services:
+  web:
+    build: .
+    #image: shapely-api-server:v1.0.5
+    image: shapely-api-server 
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_RUN_HOST=0.0.0.0
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
