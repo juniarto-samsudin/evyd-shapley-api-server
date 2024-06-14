@@ -6,6 +6,10 @@ name = "pypi"
 [packages]
 flask = "*"
 requests = "*"
+docker = "*"
+python-dotenv = "*"
+redis = "*"
+gunicorn = "*"
 
 [dev-packages]
 

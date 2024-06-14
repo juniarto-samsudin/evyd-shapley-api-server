@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: shapley-flask-app
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=redis
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - shapley-network
+
+  redis:
+    image: redislabs/rejson:latest
+    container_name: shapley-redisjson
+    ports:
+      - "6379:6379"
+    volumes:
+      - rejson_data:/data
+    networks:
+      - shapley-network
+
+volumes:
+  rejson_data:
+
+networks:
+  shapley-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.20.0/24
+          gateway: 192.168.20.1
+

@@ -2,3 +2,4 @@
 !/uploads/.gitkeep
 /logs/*
 !/logs/.gitkeep
+__pycache__/

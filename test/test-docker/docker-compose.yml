@@ -1,0 +1,9 @@
+version: '3'
+services:
+  your-service:
+    build: .
+    image: test-docker
+    environment:
+      - TZ=Asia/Singapore
+    volumes:
+      - ./logs:/app/logs

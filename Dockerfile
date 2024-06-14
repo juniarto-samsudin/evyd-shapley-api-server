@@ -25,4 +25,6 @@ ENV FLASK_RUN_HOST=0.0.0.0
 # ENV FLASK_DEBUG=1
 
 # Run app.py when the container launches
-CMD ["flask", "run"]
+#CMD ["flask", "run"]
+CMD ["gunicorn", "--config", "gunicorn_config.py", "app:app"]
+

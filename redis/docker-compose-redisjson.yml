@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redislabs/rejson:latest
+    container_name: shapley-redisjson
+    ports:
+      - "6379:6379"
+    volumes:
+      - rejson_data:/data
+
+volumes:
+  rejson_data:
