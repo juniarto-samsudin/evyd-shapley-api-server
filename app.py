@@ -11,7 +11,8 @@ load_dotenv()
 #Get Redis Host from environment variable in docker-compose
 #If not found, use localhost for development
 redis_host = os.getenv('REDIS_HOST', 'localhost')
-r = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
+redis_port = os.getenv('REDIS_PORT', 6379)
+r = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
 logging.basicConfig(filename='./logs/app.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', 
                     datefmt='%m/%d/%Y %I:%M:%S %p')
 
@@ -69,7 +70,7 @@ def upload_file():
             lock = r.lock("lock:{}".format(session_id), blocking=False, timeout=10) 
             try:
                 with lock:
-                    container_id = launch_container(image)
+                    container_id = launch_container(image, session_id)
                     if container_id:
                         r.hset("session:{}".format(session_id), mapping={
                             "container_status": "running", 
@@ -128,7 +129,7 @@ def get_shapley_values():
     response = r.execute_command('JSON.GET', 'session_1')
     return response
     
-def launch_container(image):
+def launch_container(image, session_id):
     try:
         container = client.containers.run(image, 
                                           detach=True,
@@ -140,7 +141,9 @@ def launch_container(image):
                                           },
                                           environment={
                                               'TZ': 'Asia/Singapore',
-                                              'REDIS_HOST': 'redis'
+                                              'REDIS_HOST': 'redis',
+                                              'SESSION_ID': session_id,
+                                              'REDIS_PORT': redis_port
                                           },
                                             auto_remove=False,
                                             network="evyd-shapley-api-server_shapley-network"

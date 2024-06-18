@@ -5,17 +5,22 @@ from dotenv import load_dotenv
 import os
 import json
 
-
-logging.basicConfig(filename='./logs/app.log', level=logging.DEBUG, 
+load_dotenv()
+session_id = os.getenv('SESSION_ID')
+log_name = 'container-{}.log'.format(session_id)
+logging.basicConfig(filename=("./logs/container-logs/{}".format(log_name)), 
+                    level=logging.DEBUG, 
                     format='%(asctime)s %(levelname)s %(message)s', 
                     datefmt='%m/%d/%Y %I:%M:%S %p')
-load_dotenv()
+
 
 #Get Redis Host from environment variable in docker-compose
 #If not found, use localhost for development
 redis_host = os.getenv('REDIS_HOST', 'localhost')
+redis_port = os.getenv('REDIS_PORT', 6379)
 logging.info('Redis Host: {}'.format(redis_host))
-r = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
+logging.info('Session ID: {}'.format(session_id))
+r = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
 def main():
     data = {
     "session_1": {

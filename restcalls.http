@@ -6,7 +6,7 @@ Content-Type: multipart/form-data; boundary=WebAppBoundary
 Content-Disposition: form-data; name="session_id"
 Content-Type: text/plain
 
-session-11
+session-16
 --WebAppBoundary
 Content-Disposition: form-data; name="party_id"
 Content-Type: text/plain
@@ -39,6 +39,39 @@ Content-Type: application/json
 
 ### Get Shapley Value
 GET http://localhost:5000/get-shapley-values?session_id=session-5
+
+###
+
+### Using Shapley2 Server
+POST http://shapley2:3389/upload HTTP/1.1
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+
+--WebAppBoundary
+Content-Disposition: form-data; name="session_id"
+Content-Type: text/plain
+
+session-10
+--WebAppBoundary
+Content-Disposition: form-data; name="party_id"
+Content-Type: text/plain
+
+party_id_1234
+--WebAppBoundary
+Content-Disposition: form-data; name="epoch"
+Content-Type: text/plain
+
+10
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+< test.txt
+--WebAppBoundary--
+
+###
+### Get Shapley Value
+GET http://shapley2:3389/get-shapley-values?session_id=session-5
 
 
 

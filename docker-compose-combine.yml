@@ -8,6 +8,8 @@ services:
       - "5000:5000"
     environment:
       - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TZ=Asia/Singapore
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads
@@ -18,8 +20,6 @@ services:
   redis:
     image: redislabs/rejson:latest
     container_name: shapley-redisjson
-    ports:
-      - "6379:6379"
     volumes:
       - rejson_data:/data
     networks:

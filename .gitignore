@@ -3,3 +3,6 @@
 /logs/*
 !/logs/.gitkeep
 __pycache__/
+/logs/container-logs/*
+!/logs/container-logs/.gitkeep
+!/logs/container-logs/
