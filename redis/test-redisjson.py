@@ -1,7 +1,7 @@
 import redis
 import json
 
-r = redis.Redis(host='localhost', port=6379, db=0)
+r = redis.Redis(host='gpuserver', port=6379, db=0)
 
 data = {
     "session_1": {
@@ -27,7 +27,7 @@ responseAll = r.execute_command('JSON.GET', 'session_1')
 print('responseAll: {}'.format(responseAll.decode('utf-8')))
  """
 
-from redis.commands.json.path import Path
+""" from redis.commands.json.path import Path
 from redis.commands.json import JSONCommands
 
 
@@ -55,5 +55,5 @@ if index is not None:
     r.execute_command('JSON.SET', key, '.{}.parties[{}].shapley_values'.format(key, index), json.dumps(new_shapley_values))
     
 responseAll = r.execute_command('JSON.GET', key)
-print('responseAll: {}'.format(responseAll.decode('utf-8')))
+print('responseAll: {}'.format(responseAll.decode('utf-8'))) """
 

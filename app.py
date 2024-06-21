@@ -43,13 +43,22 @@ def upload_file():
     session_id = request.form.get('session_id', 'Unknown')
     party_id = request.form.get('party_id', 'Unknown')
     epoch = request.form.get('epoch', 'Unknown')
+    #local_model = 1 ==> if local model is uploaded
+    #local_model = 0 ==> if global model is uploaded
+    #default is local model
+    local_model = request.form.get('local_model', '1')
     logging.info("Session ID: {}, Party ID: {}, Epoch: {} ".format(session_id, party_id, epoch))
 
     if file and allowed_file(file.filename):
         filename = file.filename
         #filename = 'OK-{}-{}-{}'.format(session_id, party_id, filename)
-        directory = os.path.join(UPLOAD_FOLDER, session_id, party_id)
-        logging.info('Directory: {}'.format(directory))
+        directory = None
+        if local_model == '1': #local model
+            directory = os.path.join(UPLOAD_FOLDER, session_id, party_id)
+            logging.info('Directory for Local Model: {}'.format(directory))
+        else: #global model
+            directory = os.path.join(UPLOAD_FOLDER, session_id, 'global')
+            logging.info('Directory for Global Model: {}'.format(directory))
 
         # Create directory if it does not exist
         if not os.path.exists(directory):
