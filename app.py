@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import os
 import logging
 import docker
@@ -17,6 +18,7 @@ logging.basicConfig(filename='./logs/app.log', level=logging.DEBUG, format='%(as
                     datefmt='%m/%d/%Y %I:%M:%S %p')
 
 app = Flask(__name__)
+cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 app.config['HOST_CONTAINER_LOGS_PATH'] = os.getenv('HOST_CONTAINER_LOGS_PATH')
 
 UPLOAD_FOLDER = 'uploads'
