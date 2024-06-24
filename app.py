@@ -51,6 +51,8 @@ def upload_file():
 
     if file and allowed_file(file.filename):
         filename = file.filename
+        parts = filename.split('.', 1)
+        filename = "{}{}.{}".format(parts[0], epoch, parts[1])
         #filename = 'OK-{}-{}-{}'.format(session_id, party_id, filename)
         directory = None
         if local_model == '1': #local model

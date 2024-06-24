@@ -6,22 +6,27 @@ Content-Type: multipart/form-data; boundary=WebAppBoundary
 Content-Disposition: form-data; name="session_id"
 Content-Type: text/plain
 
-session-16
+session-101
 --WebAppBoundary
 Content-Disposition: form-data; name="party_id"
 Content-Type: text/plain
 
-party_id_1234
+party_id_1236
 --WebAppBoundary
 Content-Disposition: form-data; name="epoch"
 Content-Type: text/plain
 
 10
 --WebAppBoundary
-Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Disposition: form-data; name="local_model"
 Content-Type: text/plain
 
-< test.txt
+0
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test.pth.tar"
+Content-Type: text/plain
+
+< test.pth.tar
 --WebAppBoundary--
 
 ###

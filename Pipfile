@@ -10,7 +10,7 @@ docker = "*"
 python-dotenv = "*"
 redis = "*"
 gunicorn = "*"
-flask-cors = "*"
+flask-cors = "~=4.0.1"
 
 [dev-packages]
 
