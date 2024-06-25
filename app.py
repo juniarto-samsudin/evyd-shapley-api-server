@@ -5,6 +5,7 @@ import logging
 import docker
 from dotenv import load_dotenv
 import redis
+import json
 
 client = docker.from_env()
 load_dotenv()
@@ -20,6 +21,8 @@ logging.basicConfig(filename='./logs/app.log', level=logging.DEBUG, format='%(as
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 app.config['HOST_CONTAINER_LOGS_PATH'] = os.getenv('HOST_CONTAINER_LOGS_PATH')
+app.config['HOST_CONTAINER_UPLOAD_PATH'] = os.getenv('HOST_CONTAINER_UPLOAD_PATH')
+app.config['HOST_CONTAINER_VAL_PATH'] = os.getenv('HOST_CONTAINER_VAL_PATH')
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'tar'}
@@ -29,6 +32,35 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/initiate-session', methods=['POST'])
+def initiate_session():
+    data = request.json
+    session_id = data.get('session_id')
+    party_ids = data.get('party_id')
+    logging.info("Initiating session: {}".format(session_id))
+    logging.info("Party IDs: {}".format(party_ids))
+    if not session_id:
+        return jsonify({'error': 'Session ID is required'}), 400
+    if not isinstance(party_ids, list):
+        return jsonify({'error': 'Party IDs should be a list'}), 400
+    try:
+        party_ids_json_str = json.dumps(party_ids)
+        logging.info("Party IDs String: {}".format(party_ids_json_str))
+        r.hset("session:{}".format(session_id), mapping={
+                        "party_ids": party_ids_json_str
+                        })
+        #Create Local and Global Directories
+        for party_id in party_ids:
+            directory = os.path.join(UPLOAD_FOLDER, session_id, party_id)
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+        directory = os.path.join(UPLOAD_FOLDER, session_id, 'global')
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        return jsonify({'message': 'Session initiated', 'session_id': session_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -79,11 +111,19 @@ def upload_file():
         # Launch only if container does not exist
         if containerStatus == None:
             logging.info('Container not found. Starting container...')
+            #checking if session has been initiated and party ids are set
+            party_ids_json_str = r.hget("session:{}".format(session_id), "party_ids")
+            if party_ids_json_str == None:
+                logging.error('Session not initiated. Skipping launching container operation ...')
+                return jsonify({'error': 'Session not initiated. Skipping launching container operation ...'}), 500
+            party_ids = json.loads(party_ids_json_str)
+
             # Acquiring Lock in Non-blocking mode, immediately return if lock is not available
             lock = r.lock("lock:{}".format(session_id), blocking=False, timeout=10) 
             try:
                 with lock:
-                    container_id = launch_container(image, session_id)
+                    #container_id = launch_container(image, session_id)
+                    container_id = launch_container2(image, session_id, party_ids)
                     if container_id:
                         r.hset("session:{}".format(session_id), mapping={
                             "container_status": "running", 
@@ -172,6 +212,69 @@ def launch_container(image, session_id):
 def getContainerStatus(session_id):
     container_status = r.hget("session:{}".format(session_id), "container_status")
     return container_status
-    
+
+def launch_container2(image, session_id, party_ids):
+    client1_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[0])
+    client2_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[1])
+    client3_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[2])
+    global_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, 'global')
+    try:
+        container = client.containers.run(image, 
+                                          detach=True,
+                                          volumes={
+                                              app.config['HOST_CONTAINER_LOGS_PATH']: {
+                                                    'bind': '/app/logs',
+                                                    'mode': 'rw'
+                                                },
+                                              client1_dir: {
+                                                    'bind': '/app/local1',
+                                                    'mode': 'rw'
+                                                },
+                                              client2_dir: {
+                                                    'bind': '/app/local2',
+                                                    'mode': 'rw'
+                                                },
+                                              client3_dir: {
+                                                        'bind': '/app/local3',
+                                                        'mode': 'rw'
+                                                    },
+                                              global_dir: {
+                                                            'bind': '/app/global',
+                                                            'mode': 'rw'
+                                                        },
+                                              app.config['HOST_CONTAINER_VAL_PATH']: {
+                                                    'bind': '/app/valdataset',
+                                                    'mode': 'rw'
+                                                }  
+                                          },
+                                          environment={
+                                              'LOCAL_MODEL_PATH1':'/app/local1',
+                                              'LOCAL_MODEL_PATH2':'/app/local2',
+                                              'LOCAL_MODEL_PATH3':'/app/local3',
+                                              'GLOBAL_MODEL_PATH':'/app/global',
+                                              'VALIDATION_DATASET':'/app/valdataset',
+                                              'TZ': 'Asia/Singapore',
+                                              'REDIS_HOST': 'redis',
+                                              'SESSION_ID': session_id,
+                                              'REDIS_PORT': redis_port
+                                          },
+                                          device_requests=[
+                                            docker.types.DeviceRequest(
+                                                driver='nvidia',
+                                                count=-1, 
+                                                capabilities=[['gpu']]
+                                                )
+                                            ],
+                                            shm_size='2gb',
+                                            auto_remove=False,
+                                            network="evyd-shapley-api-server_shapley-network"
+                                          )
+        return container.id
+    except docker.errors.ImageNotFound:
+        logging.error('Image not found')
+        return None
+    except docker.errors.APIError as e:
+        logging.error(str(e))
+        return None    
 if __name__ == '__main__':
     app.run(debug=True)
