@@ -1,4 +1,4 @@
-POST http://127.0.0.1:5000/upload HTTP/1.1
+POST http://172.20.117.210:5000/upload HTTP/1.1
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
 
@@ -6,7 +6,7 @@ Content-Type: multipart/form-data; boundary=WebAppBoundary
 Content-Disposition: form-data; name="session_id"
 Content-Type: text/plain
 
-session-27
+session-29
 --WebAppBoundary
 Content-Disposition: form-data; name="party_id"
 Content-Type: text/plain
@@ -105,11 +105,11 @@ GET http://127.0.0.1:5000/get-shapley-values-mock?session_id=session-1
 
 ###
 ### Initiate Session
-POST http://127.0.0.1:5000/initiate-session HTTP/1.1
+POST http://172.20.117.210:5000/initiate-session HTTP/1.1
 Content-Type: application/json
 
 {
-    "session_id": "session-27",
+    "session_id": "session-29",
     "party_id": ["party_id_1", "party_id_2", "party_id_3"]
 }
 
