@@ -10,6 +10,10 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - TZ=Asia/Singapore
+      - HOST_CONTAINER_LOGS_PATH=/mnt/data/home/juniarto/evyd-shapley-api-server/logs
+      - HOST_CONTAINER_UPLOAD_PATH=/mnt/data/home/juniarto/evyd-shapley-api-server/uploads
+      - HOST_CONTAINER_VAL_PATH=/mnt/data/home/juniarto/FromRenuga/test
+      - SHAPLEYAPP_IMAGE=halayudha/shapleyapp:v1.0
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads

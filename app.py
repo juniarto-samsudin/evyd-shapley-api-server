@@ -235,7 +235,6 @@ def getContainerStatus(session_id):
     return container_status
 
 def launch_container2(image, session_id, party_ids):
-    """ 
     client1_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[0])
     client2_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[1])
     client3_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[2])
@@ -245,6 +244,7 @@ def launch_container2(image, session_id, party_ids):
     client2_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], 'local2' )
     client3_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], 'local3' )
     global_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], 'global1' )
+    """
     logging.info('Client 1 Directory: {}'.format(client1_dir))
     logging.info('Client 2 Directory: {}'.format(client2_dir))
     logging.info('Client 3 Directory: {}'.format(client3_dir))
@@ -286,8 +286,8 @@ def launch_container2(image, session_id, party_ids):
                                               'GLOBAL_MODEL_PATH':'/app/global',
                                               'VALIDATION_DATASET':'/app/valdataset',
                                               'TZ': 'Asia/Singapore',
-                                              #'REDIS_HOST': 'redis',
-                                              'REDIS_HOST': '172.20.117.210',
+                                              'REDIS_HOST': 'redis',
+                                              #'REDIS_HOST': '172.20.117.210',
                                               'SESSION_ID': session_id,
                                               'PARTY_ID0': party_ids[0],
                                               'PARTY_ID1': party_ids[1],
@@ -303,7 +303,7 @@ def launch_container2(image, session_id, party_ids):
                                             ],
                                             shm_size='2gb',
                                             auto_remove=False,
-                                            #network="evyd-shapley-api-server_shapley-network"
+                                            network="evyd-shapley-api-server_shapley-network"
                                           )
         return container.id
     except docker.errors.ImageNotFound:
