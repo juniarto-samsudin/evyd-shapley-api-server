@@ -24,6 +24,7 @@ app.config['HOST_CONTAINER_LOGS_PATH'] = os.getenv('HOST_CONTAINER_LOGS_PATH')
 app.config['HOST_CONTAINER_UPLOAD_PATH'] = os.getenv('HOST_CONTAINER_UPLOAD_PATH')
 app.config['HOST_CONTAINER_VAL_PATH'] = os.getenv('HOST_CONTAINER_VAL_PATH')
 app.config['SHAPLEYAPP_IMAGE'] = os.getenv('SHAPLEYAPP_IMAGE')
+app.config['SHAPLEYJSON_FOLDER'] = os.getenv('SHAPLEYJSON_FOLDER')
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'tar'}
@@ -99,58 +100,21 @@ def upload_file():
         if not os.path.exists(directory):
             os.makedirs(directory)
         try:
-            file.save(os.path.join(directory, filename))
+            file_path=os.path.join(directory, filename)
+            file.save(file_path)
             logging.info('File saved: {}'.format(filename))
+
+             # Rename the file to end with .done
+            done_filename = "{}.done".format(filename)
+            done_file_path = os.path.join(directory, done_filename)
+            os.rename(file_path, done_file_path)
+            logging.info('File renamed to: {}'.format(done_filename))
+            return jsonify({"message": "File uploaded successfully", 
+                            "filename": filename})
         except Exception as e:
             logging.error('Failed to save file: {}'.format(str(e)))
             return jsonify({"error": "Failed to save file"}), 500
 
-        # Start container
-        #image = 'test-docker'
-        image = app.config['SHAPLEYAPP_IMAGE']
-        containerStatus = getContainerStatus(session_id)
-        logging.info('Container status: {}'.format(containerStatus))
-        # Launch only if container does not exist
-        if containerStatus == None:
-            logging.info('Container not found. Starting container...')
-            #checking if session has been initiated and party ids are set
-            party_ids_json_str = r.hget("session:{}".format(session_id), "party_ids")
-            if party_ids_json_str == None:
-                logging.error('Session not initiated. Skipping launching container operation ...')
-                return jsonify({'error': 'Session not initiated. Skipping launching container operation ...'}), 500
-            party_ids = json.loads(party_ids_json_str)
-
-            # Acquiring Lock in Non-blocking mode, immediately return if lock is not available
-            lock = r.lock("lock:{}".format(session_id), blocking=False, timeout=10) 
-            try:
-                with lock:
-                    #container_id = launch_container(image, session_id)
-                    container_id = launch_container2(image, session_id, party_ids)
-                    if container_id:
-                        r.hset("session:{}".format(session_id), mapping={
-                            "container_status": "running", 
-                            "container_id": container_id})
-                        logging.info('Container started: {}'.format(container_id))
-                        return jsonify({"message": "File uploaded successfully", 
-                                    "filename": filename,
-                                    "container": {"status": "running", "id": container_id}
-                                    }), 200
-                    else:
-                        logging.error('Failed to start container')
-                        return jsonify({
-                                    'message': 'File uploaded successfully',
-                                    'filename': filename,
-                                    'error': 'Failed to start container'
-                                    }), 500
-            except redis.exceptions.LockError:
-                logging.error('Failed to acquire lock')
-                return jsonify({'error': 'Failed to acquire lock. Skipping launching container operation ...'}), 500
-        else:
-            logging.info('Container found. Skipping launching container operation ...')
-            return jsonify({"message": "File uploaded successfully", 
-                            "filename": filename,
-                            "container": {"status": containerStatus}
-                            }), 200
     return jsonify({"error": "File type not allowed"}), 400
 
 @app.route('/start-container', methods=['POST'])
@@ -182,13 +146,28 @@ def get_shapley_values():
     session_id = request.args.get('session_id')
     logging.info("get_shapley_values for sessionID: {}".format(session_id))
     try:
-        response = r.execute_command('JSON.GET', session_id)
-        if response is None:
-            return "No data found four the given session ID: {}".format(session_id), 404
-        return response
-    except redis.RedisError as e:
-        logging.error("Redis Error: {}".format(str(e)))
-        return "Internal Server Error", 500
+        # Define the path to search for the file
+        directory = app.config['SHAPLEYJSON_FOLDER']
+
+        # Search for the file named after session_id
+        file_path = None
+        for file_name in os.listdir(directory):
+            if file_name.startswith(session_id):
+                file_path = os.path.join(directory, file_name)
+                break
+
+        if file_path is None:
+            return jsonify({"error": "No data found for the given session ID: {}".format(session_id)}), 404
+
+        # Read the JSON content from the file
+        with open(file_path, 'r') as file:
+            response = json.load(file)
+
+        return jsonify(response)
+
+    except Exception as e:
+        logging.error("Error: {}".format(str(e)))
+        return jsonify({"error": "get-shapley-values for {} error".format(session_id)}), 500
 
 @app.route('/get-shapley-values-mock', methods=['GET'])
 def get_shapley_values_mock():

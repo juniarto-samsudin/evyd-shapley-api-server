@@ -1,0 +1,5 @@
+HOST_CONTAINER_LOGS_PATH=/mnt/data/home/juniarto/evyd-shapley-api-server/logs
+HOST_CONTAINER_UPLOAD_PATH=/mnt/data/home/juniarto/FromRenuga
+HOST_CONTAINER_VAL_PATH=/mnt/data/home/juniarto/FromRenuga/test
+SHAPLEYAPP_IMAGE=halayudha/shapleyapp:v1.1
+SHAPLEYJSON_FOLDER=/home/renuga_k/juniarto/shapleyjson_folder
