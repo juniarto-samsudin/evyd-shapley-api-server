@@ -39,22 +39,27 @@ Content-Type: multipart/form-data; boundary=WebAppBoundary
 Content-Disposition: form-data; name="session_id"
 Content-Type: text/plain
 
-session-18
+session-202
 --WebAppBoundary
 Content-Disposition: form-data; name="party_id"
 Content-Type: text/plain
 
-party_id_1234
+party_id_2
+--WebAppBoundary
+Content-Disposition: form-data; name="epoch"
+Content-Type: text/plain
+
+2
 --WebAppBoundary
 Content-Disposition: form-data; name="local_model"
 Content-Type: text/plain
 
 1
 --WebAppBoundary
-Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Disposition: form-data; name="file"; filename="test.pth.tar"
 Content-Type: text/plain
 
-< test.txt
+< test.pth.tar
 --WebAppBoundary--
 
 
@@ -69,7 +74,7 @@ Content-Type: application/json
 ###
 
 ### Get Shapley Value
-GET http://localhost:5000/get-shapley-values?session_id=session-5
+GET http://127.0.0.1:5000/get-shapley-values?session_id=session-1
 
 ###
 
@@ -105,11 +110,11 @@ GET http://127.0.0.1:5000/get-shapley-values-mock?session_id=session-1
 
 ###
 ### Initiate Session
-POST http://172.20.117.210:5000/initiate-session HTTP/1.1
+POST http://127.0.0.1:5000/initiate-session HTTP/1.1
 Content-Type: application/json
 
 {
-    "session_id": "session-29",
+    "session_id": "session-202",
     "party_id": ["party_id_1", "party_id_2", "party_id_3"]
 }
 

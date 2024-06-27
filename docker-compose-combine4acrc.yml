@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: shapley-flask-app-acrc
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TZ=Asia/Singapore
+      - HOST_CONTAINER_LOGS_PATH=/mnt/data/home/juniarto/myprojects/EVYD/evyd-shapley-api-server/logs
+      - HOST_CONTAINER_UPLOAD_PATH=/mnt/data/home/juniarto/myprojects/EVYD/evyd-shapley-api-server/uploads
+      - HOST_CONTAINER_VAL_PATH=/mnt/data/home/juniarto/myprojects/EVYD/dataset/test
+      - SHAPLEYAPP_IMAGE=halayudha/shapleyapp:v1.1
+      - SHAPLEYJSON_FOLDER=/app/shapleyjson_folder
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - /mnt/data/home/juniarto/myprojects/EVYD/shapleyjson_folder:/app/shapleyjson_folder
+    networks:
+      - shapley-network
+
+  #redis:
+    #image: redislabs/rejson:latest
+    #container_name: shapley-redisjson
+    #volumes:
+      #- rejson_data:/data
+    #networks:
+      #- shapley-network
+
+#volumes:
+  #rejson_data:
+
+networks:
+  shapley-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.20.0/24
+          gateway: 192.168.20.1
+

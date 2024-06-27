@@ -7,14 +7,14 @@ from dotenv import load_dotenv
 import redis
 import json
 
-client = docker.from_env()
+#client = docker.from_env()
 load_dotenv()
 
 #Get Redis Host from environment variable in docker-compose
 #If not found, use localhost for development
-redis_host = os.getenv('REDIS_HOST', 'localhost')
-redis_port = os.getenv('REDIS_PORT', 6379)
-r = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
+#redis_host = os.getenv('REDIS_HOST', 'localhost')
+#redis_port = os.getenv('REDIS_PORT', 6379)
+#r = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
 logging.basicConfig(filename='./logs/app.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', 
                     datefmt='%m/%d/%Y %I:%M:%S %p')
 
@@ -49,9 +49,11 @@ def initiate_session():
     try:
         party_ids_json_str = json.dumps(party_ids)
         logging.info("Party IDs String: {}".format(party_ids_json_str))
+        '''
         r.hset("session:{}".format(session_id), mapping={
                         "party_ids": party_ids_json_str
                         })
+        '''
         #Create Local and Global Directories
         for party_id in party_ids:
             directory = os.path.join(UPLOAD_FOLDER, session_id, party_id)
@@ -117,29 +119,6 @@ def upload_file():
 
     return jsonify({"error": "File type not allowed"}), 400
 
-@app.route('/start-container', methods=['POST'])
-def start_container():
-    image = request.json.get('image')
-    if not image:
-        return jsonify({'error': 'Image name is required'}), 400
-    
-    try:
-        container = client.containers.run(image, 
-                                          detach=True,
-                                          volumes={
-                                              app.config['HOST_CONTAINER_LOGS_PATH']: {
-                                                    'bind': '/app/logs',
-                                                    'mode': 'rw'
-                                                }
-                                          },
-                                          environment={
-                                              'TZ': 'Asia/Singapore'
-                                          })
-        return jsonify({'message': 'Container started', 'container_id': container.id})
-    except docker.errors.ImageNotFound:
-        return jsonify({'error': 'Image not found'}), 404
-    except docker.errors.APIError as e:
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/get-shapley-values', methods=['GET'])
 def get_shapley_values():
@@ -148,12 +127,14 @@ def get_shapley_values():
     try:
         # Define the path to search for the file
         directory = app.config['SHAPLEYJSON_FOLDER']
+        logging.info("Directory: {}".format(directory))
 
         # Search for the file named after session_id
         file_path = None
         for file_name in os.listdir(directory):
             if file_name.startswith(session_id):
                 file_path = os.path.join(directory, file_name)
+                logging.info("File found: {}".format(file_path))
                 break
 
         if file_path is None:
@@ -162,134 +143,13 @@ def get_shapley_values():
         # Read the JSON content from the file
         with open(file_path, 'r') as file:
             response = json.load(file)
+            logging.info("Response: {}".format(response))
 
         return jsonify(response)
 
     except Exception as e:
         logging.error("Error: {}".format(str(e)))
         return jsonify({"error": "get-shapley-values for {} error".format(session_id)}), 500
-
-@app.route('/get-shapley-values-mock', methods=['GET'])
-def get_shapley_values_mock():
-    session_id = request.args.get('session_id')
-    logging.info("get_shapley_values for sessionID: {}".format(session_id))
-    try:
-        response = r.execute_command('JSON.GET', 'session-1')
-        if response is None:
-            return "No data found four the given session ID: {}".format('session-1'), 404
-        return response
-    except redis.RedisError as e:
-        logging.error("Redis Error: {}".format(str(e)))
-        return "Internal Server Error", 500
     
-def launch_container(image, session_id):
-    try:
-        container = client.containers.run(image, 
-                                          detach=True,
-                                          volumes={
-                                              app.config['HOST_CONTAINER_LOGS_PATH']: {
-                                                    'bind': '/app/logs',
-                                                    'mode': 'rw'
-                                                }
-                                          },
-                                          environment={
-                                              'TZ': 'Asia/Singapore',
-                                              'REDIS_HOST': 'redis',
-                                              'SESSION_ID': session_id,
-                                              'REDIS_PORT': redis_port
-                                          },
-                                            auto_remove=False,
-                                            network="evyd-shapley-api-server_shapley-network"
-                                          )
-        return container.id
-    except docker.errors.ImageNotFound:
-        logging.error('Image not found')
-        return None
-    except docker.errors.APIError as e:
-        logging.error(str(e))
-        return None
-    
-def getContainerStatus(session_id):
-    container_status = r.hget("session:{}".format(session_id), "container_status")
-    return container_status
-
-def launch_container2(image, session_id, party_ids):
-    client1_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[0])
-    client2_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[1])
-    client3_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[2])
-    global_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, 'global') 
-    """
-    client1_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], 'local1' )
-    client2_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], 'local2' )
-    client3_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], 'local3' )
-    global_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], 'global1' )
-    """
-    logging.info('Client 1 Directory: {}'.format(client1_dir))
-    logging.info('Client 2 Directory: {}'.format(client2_dir))
-    logging.info('Client 3 Directory: {}'.format(client3_dir))
-    logging.info('Global Directory: {}'.format(global_dir))
-    logging.info('Validation Dataset Directory: {}'.format(app.config['HOST_CONTAINER_VAL_PATH']))
-    try:
-        container = client.containers.run(image, 
-                                          detach=True,
-                                          volumes={
-                                              app.config['HOST_CONTAINER_LOGS_PATH']: {
-                                                    'bind': '/app/logs',
-                                                    'mode': 'rw'
-                                                },
-                                              client1_dir: {
-                                                    'bind': '/app/local1',
-                                                    'mode': 'rw'
-                                                },
-                                              client2_dir: {
-                                                    'bind': '/app/local2',
-                                                    'mode': 'rw'
-                                                },
-                                              client3_dir: {
-                                                        'bind': '/app/local3',
-                                                        'mode': 'rw'
-                                                    },
-                                              global_dir: {
-                                                            'bind': '/app/global',
-                                                            'mode': 'rw'
-                                                        },
-                                              app.config['HOST_CONTAINER_VAL_PATH']: {
-                                                    'bind': '/app/valdataset',
-                                                    'mode': 'rw'
-                                                }  
-                                          },
-                                          environment={
-                                              'LOCAL_MODEL_PATH1':'/app/local1',
-                                              'LOCAL_MODEL_PATH2':'/app/local2',
-                                              'LOCAL_MODEL_PATH3':'/app/local3',
-                                              'GLOBAL_MODEL_PATH':'/app/global',
-                                              'VALIDATION_DATASET':'/app/valdataset',
-                                              'TZ': 'Asia/Singapore',
-                                              'REDIS_HOST': 'redis',
-                                              #'REDIS_HOST': '172.20.117.210',
-                                              'SESSION_ID': session_id,
-                                              'PARTY_ID0': party_ids[0],
-                                              'PARTY_ID1': party_ids[1],
-                                              'PARTY_ID2': party_ids[2],
-                                              'REDIS_PORT': redis_port
-                                          },
-                                          device_requests=[
-                                            docker.types.DeviceRequest(
-                                                driver='nvidia',
-                                                count=-1, 
-                                                capabilities=[['gpu']]
-                                                )
-                                            ],
-                                            shm_size='2gb',
-                                            auto_remove=False,
-                                            network="evyd-shapley-api-server_shapley-network"
-                                          )
-        return container.id
-    except docker.errors.ImageNotFound:
-        logging.error('Image not found')
-        return None
-    except docker.errors.APIError as e:
-        logging.error(str(e))
-        return None    
 if __name__ == '__main__':
     app.run(debug=True)
