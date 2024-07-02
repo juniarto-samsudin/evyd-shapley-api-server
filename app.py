@@ -203,6 +203,25 @@ def get_shapley_values_mock():
         logging.error("Redis Error: {}".format(str(e)))
         return "Internal Server Error", 500
     
+@app.route('/get-accuracy-values', methods=['GET'])
+def get_accuracy_values():
+    session_id = request.args.get('session_id')
+    session_id_acc = session_id + '_acc'
+    logging.info("get_accuracy_values for sessionID: {}".format(session_id_acc))
+    try:
+        response = r.execute_command('JSON.GET', session_id_acc)
+        if response is None:
+            return "No data found four the given session ID: {}".format(session_id_acc), 404
+        #Change key from session_id_acc to session_id
+        responseData = json.loads(response)
+        responseData[session_id] = responseData.pop(session_id_acc)
+        response = json.dumps(responseData)
+        return response
+        
+    except redis.RedisError as e:
+        logging.error("Redis Error: {}".format(str(e)))
+        return "Internal Server Error", 500
+    
 def launch_container(image, session_id):
     try:
         container = client.containers.run(image, 
