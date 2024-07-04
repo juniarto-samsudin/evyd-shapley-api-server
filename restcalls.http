@@ -113,6 +113,17 @@ Content-Type: application/json
     "party_id": ["party_id_1", "party_id_2", "party_id_3"]
 }
 
+###
+### Set Number of Images
+POST http://127.0.01:5000/set-numberofimages HTTP/1.1
+Content-Type: application/json
+
+{
+    "session_id": "session-29",
+    "party_id": "party_id_1",
+    "number_of_images": 113
+}
+
 
 
 

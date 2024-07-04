@@ -63,6 +63,28 @@ def initiate_session():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/set-numberofimages', methods=['POST'])
+def set_numberofimages():
+    data = request.json
+    session_id = data.get('session_id')
+    party_id = data.get('party_id')
+    number_of_images = data.get('number_of_images')
+    logging.info("Setting number of images for session: {}, party: {}, number of images: {}".format(session_id, party_id, number_of_images))
+    if not session_id:
+        return jsonify({'error': 'Session ID is required'}), 400
+    if not party_id:
+        return jsonify({'error': 'Party ID is required'}), 400
+    if not number_of_images:
+        return jsonify({'error': 'Number of images is required'}), 400
+    try:
+        newKey = "{}_noi".format(party_id) 
+        r.hset("session:{}".format(session_id), mapping={
+                        newKey: number_of_images
+                        })
+        return jsonify({'message': 'Number of images set', 'session_id': session_id, 'party_id': party_id, 'number_of_images': number_of_images})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -120,12 +142,19 @@ def upload_file():
                 return jsonify({'error': 'Session not initiated. Skipping launching container operation ...'}), 500
             party_ids = json.loads(party_ids_json_str)
 
+            #checking if number of images are set
+            number_of_images_all = []
+            for party_id in party_ids:
+                newKey = "{}_noi".format(party_id) 
+                number_of_images = r.hget("session:{}".format(session_id), newKey)
+                number_of_images_all.append(number_of_images)
+
             # Acquiring Lock in Non-blocking mode, immediately return if lock is not available
             lock = r.lock("lock:{}".format(session_id), blocking=False, timeout=10) 
             try:
                 with lock:
                     #container_id = launch_container(image, session_id)
-                    container_id = launch_container2(image, session_id, party_ids)
+                    container_id = launch_container2(image, session_id, party_ids, number_of_images_all)
                     if container_id:
                         r.hset("session:{}".format(session_id), mapping={
                             "container_status": "running", 
@@ -253,7 +282,7 @@ def getContainerStatus(session_id):
     container_status = r.hget("session:{}".format(session_id), "container_status")
     return container_status
 
-def launch_container2(image, session_id, party_ids):
+def launch_container2(image, session_id, party_ids, number_of_images_all):
     client1_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[0])
     client2_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[1])
     client3_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[2])
@@ -311,7 +340,10 @@ def launch_container2(image, session_id, party_ids):
                                               'PARTY_ID0': party_ids[0],
                                               'PARTY_ID1': party_ids[1],
                                               'PARTY_ID2': party_ids[2],
-                                              'REDIS_PORT': redis_port
+                                              'REDIS_PORT': redis_port,
+                                              'NUMBER_OF_IMAGES_ID0': number_of_images_all[0],
+                                              'NUMBER_OF_IMAGES_ID1': number_of_images_all[1],
+                                              'NUMBER_OF_IMAGES_ID2': number_of_images_all[2]
                                           },
                                           device_requests=[
                                             docker.types.DeviceRequest(
