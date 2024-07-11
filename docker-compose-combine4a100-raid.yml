@@ -13,7 +13,7 @@ services:
       - HOST_CONTAINER_LOGS_PATH=/raid/renuga/juniarto/evyd-shapley-api-server/logs
       - HOST_CONTAINER_UPLOAD_PATH=/raid/renuga/juniarto/evyd-shapley-api-server/uploads
       - HOST_CONTAINER_VAL_PATH=/home/renuga_k/juniarto/dataset/test
-      - SHAPLEYAPP_IMAGE=halayudha/shapleyapp:v1.8
+      - SHAPLEYAPP_IMAGE=halayudha/shapleyapp:v1.9
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads
