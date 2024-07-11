@@ -283,6 +283,10 @@ def getContainerStatus(session_id):
     return container_status
 
 def launch_container2(image, session_id, party_ids, number_of_images_all):
+    restart_policy = {
+        "Name": "on-failure",
+        "MaximumRetryCount": 5  # Optional: Specify the maximum number of retries
+    }
     client1_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[0])
     client2_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[1])
     client3_dir = os.path.join(app.config['HOST_CONTAINER_UPLOAD_PATH'], session_id, party_ids[2])
@@ -354,7 +358,8 @@ def launch_container2(image, session_id, party_ids, number_of_images_all):
                                             ],
                                             shm_size='2gb',
                                             auto_remove=False,
-                                            network="evyd-shapley-api-server_shapley-network"
+                                            network="evyd-shapley-api-server_shapley-network",
+                                            #restart_policy=restart_policy
                                           )
         return container.id
     except docker.errors.ImageNotFound:
